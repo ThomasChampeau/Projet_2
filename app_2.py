@@ -17,9 +17,9 @@ def main() :
     @st.cache_resource
     def load_data():
     
-        sample = pd.read_csv('merge_V6.csv', encoding ='utf-8', na_values=["\\N"])
-        sample['runtimeMinutes'] = pd.to_numeric(sample['runtimeMinutes'], errors="coerce").fillna(0).astype(int)
-        sample['averageRating'] = pd.to_numeric(sample['averageRating'], errors="coerce").fillna(0.0)
+        sample = pd.read_csv('BDD_movies_clean.zip', compression="zip", encoding ='utf-8', na_values=["\\N"])
+        sample['runtime'] = pd.to_numeric(sample['runtime'], errors="coerce").fillna(0).astype(int)
+        sample['vote_average'] = pd.to_numeric(sample['vote_average'], errors="coerce").fillna(0.0)
         return sample
 
 
@@ -45,9 +45,8 @@ def main() :
 
     
     sample = load_data()
-    title = sample.primaryTitle
     #sidebar.header va permettre de mettre une bordure sur le coté
-    chk_id = st.selectbox("Selectionnez un film que vous aimez", options= sample["primaryTitle"], index= 120, placeholder="Sectionnez un film", key="selection")
+    chk_id = st.selectbox("Selectionnez un film que vous aimez", options= sample["original_title"], index= 120, placeholder="Sectionnez un film", key="selection")
     
     #On creée la fonction de traduction pour les résumés des films
     def trad(description):
@@ -58,18 +57,18 @@ def main() :
     #On va affiche les infos du film selectionné
     def infos_film(title):
         st.header(title)
-        st.image(sample[sample["primaryTitle"] == title]["poster_ok"].iloc[0], width=200)
-        st.write("Date de sortie :", sample[sample["primaryTitle"] == title]["release_date"].iloc[0])
-        st.write(GoogleTranslator(source="auto", target="fr").translate(sample[sample["primaryTitle"] == title]["overview"].iloc[0]))
-        st.write("Avec :", sample[sample["primaryTitle"] == title]["primaryName"].iloc[0])       
-        st.write(sample[sample["primaryTitle"] == title]["runtimeMinutes"].iloc[0], "minutes")
+        st.image(sample[sample["original_title"] == title]["poster_ok"].iloc[0], width=200)
+        st.write("Date de sortie :", sample[sample["original_title"] == title]["release_date"].iloc[0])
+        st.write(GoogleTranslator(source="auto", target="fr").translate(sample[sample["original_title"] == title]["overview"].iloc[0]))
+        st.write("Avec :", sample[sample["original_title"] == title]["primaryName"].iloc[0])       
+        st.write(sample[sample["original_title"] == title]["runtime"].iloc[0], "minutes")
     
-    st.header(chk_id)
-    st.image(sample[sample["primaryTitle"] == chk_id]["poster_ok"].iloc[0], width=200)
-    st.write("Date de sortie :", sample[sample["primaryTitle"] == chk_id]["release_date"].iloc[0])
-    st.write(GoogleTranslator(source="auto", target="fr").translate(sample[sample["primaryTitle"] == chk_id]["overview"].iloc[0]))
-    st.write("Avec :", sample[sample["primaryTitle"] == chk_id]["primaryName"].iloc[0])       
-    st.write(sample[sample["primaryTitle"] == chk_id]["runtimeMinutes"].iloc[0], "minutes")
+    st.markdown(f"### {chk_id}")
+    st.image(sample[sample["original_title"] == chk_id]["poster_ok"].iloc[0], width=200)
+    st.write("Date de sortie :", sample[sample["original_title"] == chk_id]["release_date"].iloc[0])
+    st.write(GoogleTranslator(source="auto", target="fr").translate(sample[sample["original_title"] == chk_id]["overview"].iloc[0]))
+    st.write("Avec :", sample[sample["original_title"] == chk_id]["actors"].iloc[0])       
+    st.write(sample[sample["original_title"] == chk_id]["runtime"].iloc[0], "minutes")
     
     def clean_text(text):
         text = text.lower()
@@ -84,9 +83,9 @@ def main() :
         top = 10
         vectorizer = TfidfVectorizer(stop_words= "english")
         tfidf_matrix = vectorizer.fit_transform(sample['clean_overview'])
-        if chk_id not in sample['originalTitle'].values:
+        if chk_id not in sample['original_title'].values:
             st.write("Film non trouvé !")
-        idx_film = sample[sample['originalTitle'] == chk_id].index[0]
+        idx_film = sample[sample['original_title'] == chk_id].index[0]
         titre = clean_text(chk_id)
         titre_vector = vectorizer.transform([chk_id])
         similarities = cosine_similarity(titre_vector, tfidf_matrix)
@@ -94,20 +93,29 @@ def main() :
         idxs_sorted = similarity_scores.argsort()[::-1][:top]
         idxs_excluded =  idxs_sorted[idxs_sorted != idx_film]
         
-        col_1, col_2 = st.columns(2)
-        id_col = 1
+        cols = st.columns(5)
         
-        for i in idxs_excluded:
-            with col_1 :
-                st.header(sample.iloc[i]["primaryTitle"])
-                st.image(sample.iloc[i]["poster_ok"], width=200)
-                st.write("🌟", str(sample.iloc[i]["averageRating"]))
-                st.write("Date de sortie :", sample.iloc[i]["release_date"])
-                st.write(GoogleTranslator(source="auto", target="fr").translate(sample.iloc[i]["overview"]))
-                st.write("Avec :", sample.iloc[i]["primaryName"])
-                st.write(sample.iloc[i]["runtimeMinutes"], "minutes")
-                st.write("Plus d'infos sur [IMDb.com](https://www.imdb.com/fr/) ou [TMDB.com](https://www.themoviedb.org)")
-                st.write("---")        
+        movies_to_show = idxs_excluded[:11]
+
+        for row in range(2):
+            cols = st.columns(5)
+
+            for col in range(5):
+                idx = row * 5 + col
+
+                if idx < len(movies_to_show):
+                    movie_idx = movies_to_show[idx]
+
+                    with cols[col]:
+                            st.markdown(sample.iloc[movie_idx]["original_title"])
+                            st.image(sample.iloc[movie_idx]["poster_ok"], width=200)
+                            st.write('⭐', str(sample.iloc[movie_idx]['vote_average']))
+                            st.write("Date de sortie :", sample.iloc[movie_idx]["release_date"])
+                            #st.write(GoogleTranslator(source="auto", target="fr").translate(sample.iloc[movie_idx]["overview"]))
+                            #st.write("Avec :", sample.iloc[movie_idx]["actors"])
+                            st.write(sample.iloc[movie_idx]["runtime"], "minutes")
+                            st.write("Plus d'infos sur [IMDb.com](https://www.imdb.com/fr/) ou [TMDB.com](https://www.themoviedb.org)")
+                            st.write("---")        
 
 
 if __name__ == '__main__':
