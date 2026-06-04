@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import re
+import ast
 import pickle
 from sklearn.cluster import KMeans
 from sklearn.neighbors import KNeighborsClassifier
@@ -67,8 +68,10 @@ def main() :
     st.image(sample[sample["original_title"] == chk_id]["poster_ok"].iloc[0], width=200)
     st.write("Date de sortie :", sample[sample["original_title"] == chk_id]["release_date"].iloc[0])
     st.write(GoogleTranslator(source="auto", target="fr").translate(sample[sample["original_title"] == chk_id]["overview"].iloc[0]))
-    st.write("Avec :", sample[sample["original_title"] == chk_id]["actors"].iloc[0])       
-    st.write(sample[sample["original_title"] == chk_id]["runtime"].iloc[0], "minutes")
+    actors = sample[sample['original_title'] ==chk_id]["actors"].iloc[0]
+    actors = ast.literal_eval(actors)
+    st.write("Avec :", ", ".join(actors[:6]))       
+    st.write(str(sample[sample["original_title"] == chk_id]["runtime"].iloc[0]), "minutes")
     
     def clean_text(text):
         text = text.lower()
@@ -108,12 +111,19 @@ def main() :
 
                     with cols[col]:
                             st.markdown(sample.iloc[movie_idx]["original_title"])
+                            if sample.iloc[movie_idx]["poster_ok"] == "https://media.themoviedb.org/t/p/w220_and_h330_facehttps://i.postimg.cc/W1wtX9W5/Affiche-non-dispo-(2).jpg":
+                                st.image("https://i.postimg.cc/W1wtX9W5/Affiche-non-dispo-(3).jpg")
+                            else :
+                                st.image(sample.iloc[movie_idx]["poster_ok"], width=200)
                             st.image(sample.iloc[movie_idx]["poster_ok"], width=200)
                             st.write('⭐', str(sample.iloc[movie_idx]['vote_average']))
                             st.write("Date de sortie :", sample.iloc[movie_idx]["release_date"])
                             #st.write(GoogleTranslator(source="auto", target="fr").translate(sample.iloc[movie_idx]["overview"]))
+                            actors = sample.iloc[movie_idx]["actors"]
+                            actors = ast.literal_eval(actors)
+                            st.write("Avec :", ", ".join(actors[:6]))
                             #st.write("Avec :", sample.iloc[movie_idx]["actors"])
-                            st.write(sample.iloc[movie_idx]["runtime"], "minutes")
+                            st.write(str(sample.iloc[movie_idx]["runtime"]), "minutes")
                             st.write("Plus d'infos sur [IMDb.com](https://www.imdb.com/fr/) ou [TMDB.com](https://www.themoviedb.org)")
                             st.write("---")        
 
