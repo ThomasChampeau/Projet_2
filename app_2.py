@@ -18,32 +18,18 @@ def main() :
     @st.cache_resource
     def load_data():
     
-        sample = pd.read_csv('BDD_movies_clean.zip', compression="zip", encoding ='utf-8', na_values=["\\N"])
+        sample = pd.read_csv('BDD_movies_clean.csv', encoding ='utf-8', na_values=["\\N"])
         sample['runtime'] = pd.to_numeric(sample['runtime'], errors="coerce").fillna(0).astype(int)
         sample['vote_average'] = pd.to_numeric(sample['vote_average'], errors="coerce").fillna(0.0)
         return sample
 
 
-    #on va intégrer du code html dans streamlit pour avoir un meilleur visuel
-    html_temp = """
-    <div style="background-color: tomato; padding:10px; border-radius:10px">
-    <h1 style="color: white; text-align:center">RECOMMANDATIONS DE FILMS</h1>
-    </div>
-    <p style="font-size: 20px; font-weight: bold; text-align:center">Faites votre choix !</p>
-    """
-    #Pour que le html soit integré on va le mettre dans un markdown qui sert a mettre en forme
-    st.markdown(html_temp, unsafe_allow_html=True)
     
     # Function to load custom CSS
     def local_css(file_name):
         with open(file_name) as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
             
-    local_css("design.css")
-    
-    with st.sidebar:
-        st.button("Click Me", key="green_button")
-
     
     sample = load_data()
     #sidebar.header va permettre de mettre une bordure sur le coté
@@ -83,9 +69,9 @@ def main() :
     
     #le if sert a mettre la condition "si la checkbox est selectionner"
     if chk_voisins2:
-        top = 10
+        top = 15
         vectorizer = TfidfVectorizer(stop_words= "english")
-        tfidf_matrix = vectorizer.fit_transform(sample['clean_overview'])
+        tfidf_matrix = vectorizer.fit_transform(sample['NLP'])
         if chk_id not in sample['original_title'].values:
             st.write("Film non trouvé !")
         idx_film = sample[sample['original_title'] == chk_id].index[0]
@@ -110,22 +96,31 @@ def main() :
                     movie_idx = movies_to_show[idx]
 
                     with cols[col]:
-                            st.markdown(sample.iloc[movie_idx]["original_title"])
-                            if sample.iloc[movie_idx]["poster_ok"] == "https://media.themoviedb.org/t/p/w220_and_h330_facehttps://i.postimg.cc/W1wtX9W5/Affiche-non-dispo-(2).jpg":
-                                st.image("https://i.postimg.cc/W1wtX9W5/Affiche-non-dispo-(3).jpg")
-                            else :
-                                st.image(sample.iloc[movie_idx]["poster_ok"], width=200)
-                            st.image(sample.iloc[movie_idx]["poster_ok"], width=200)
-                            st.write('⭐', str(sample.iloc[movie_idx]['vote_average']))
-                            st.write("Date de sortie :", sample.iloc[movie_idx]["release_date"])
+
+                        poster = sample.iloc[movie_idx]["poster_ok"]
+
+                        if poster == "https://media.themoviedb.org/t/p/w220_and_h330_facehttps://i.postimg.cc/W1wtX9W5/Affiche-non-dispo-(2).jpg":
+                            poster = "https://i.postimg.cc/W1wtX9W5/Affiche-non-dispo-(3).jpg"
+
+                        st.markdown(f"""
+                        <div style="width:150px; height:225px; display:flex; align-items:center; justify-content:center;">
+                            <img src="{poster}" style="max-width:140px; max-height:225px; object-fit:contain;">
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        st.write(sample.iloc[movie_idx]["original_title"])
+                        st.write("⭐", sample.iloc[movie_idx]["vote_average"])
+                        
+
+                       
+                            #st.write("Date de sortie :", sample.iloc[movie_idx]["release_date"])
                             #st.write(GoogleTranslator(source="auto", target="fr").translate(sample.iloc[movie_idx]["overview"]))
-                            actors = sample.iloc[movie_idx]["actors"]
-                            actors = ast.literal_eval(actors)
-                            st.write("Avec :", ", ".join(actors[:6]))
+                            #actors = sample.iloc[movie_idx]["actors"]
+                            #actors = ast.literal_eval(actors)
+                            #st.write("Avec :", ", ".join(actors[:6]))
                             #st.write("Avec :", sample.iloc[movie_idx]["actors"])
-                            st.write(str(sample.iloc[movie_idx]["runtime"]), "minutes")
-                            st.write("Plus d'infos sur [IMDb.com](https://www.imdb.com/fr/) ou [TMDB.com](https://www.themoviedb.org)")
-                            st.write("---")        
+                            #st.write(str(sample.iloc[movie_idx]["runtime"]), "minutes")
+                            #st.write("Plus d'infos sur [IMDb.com](https://www.imdb.com/fr/) ou [TMDB.com](https://www.themoviedb.org)")      
 
 
 if __name__ == '__main__':
